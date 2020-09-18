@@ -1,0 +1,13 @@
+-XX:MinHeapFreeRatio=20
+-XX:MaxHeapFreeRatio=40
+-Xms2048m
+-Xmx4096m
+-Dsoapui.properties=soapui.properties
+-Dsoapui.home=C:\Program Files\SmartBear\ReadyAPI-2.5.0/bin
+-Dsoapui.ext.libraries=C:\Program Files\SmartBear\ReadyAPI-2.5.0/bin/ext
+-Dsoapui.ext.listeners=C:\Program Files\SmartBear\ReadyAPI-2.5.0/bin/listeners
+-Dsoapui.ext.actions=C:\Program Files\SmartBear\ReadyAPI-2.5.0/bin/actions
+-Dwsi.dir=C:\Program Files\SmartBear\ReadyAPI-2.5.0/wsi-test-tools
+-Djava.library.path=C:\Program Files\SmartBear\ReadyAPI-2.5.0/bin
+-Djava.util.Arrays.useLegacyMergeSort=true
+-Dsun.net.http.allowRestrictedHeaders=true

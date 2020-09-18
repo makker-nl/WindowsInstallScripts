@@ -1,0 +1,1368 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<snippets>
+   <group category="SOA" language="PLSQL">
+      <snippet name="BPEL Instances on cikey or index_1" description="BPEL Instances + indexes  based on cikey or index_1">
+         <code>
+            <![CDATA[select ci.cikey, ci.flow_id, ci.creation_date, ci.state, ci.title, ci.status, ci.composite_name, ci.component_name, ci.composite_revision
+, cid.index_1, cid.index_2, cid.index_3, cid.index_4, cid.index_5, cid.index_6
+from cube_instance ci
+join ci_indexes cid on cid.cikey = ci.cikey
+where ci.cikey = 16490733  
+or cid.index_1 = '16490733';]]>
+         </code>
+      </snippet>
+      <snippet name="Composite Instance" description="Composite Instance">
+         <code>
+            <![CDATA[select csi.id
+, csi.source_name
+, csi.source_action_name
+, csi.ecid
+, csi.created_time
+, csi.updated_time
+from composite_instance csi
+where csi.id = 1410336;]]>
+         </code>
+      </snippet>
+      <snippet name="BPEL Instances by Composite Name" description="BPEL Instances">
+         <code>
+            <![CDATA[select cmi.id
+, cmi.composite_dn
+, cmi.title
+, ci.composite_name
+, cid.index_1
+, cid.index_2
+, cid.index_3
+, cid.index_4
+, cid.index_5
+, cid.index_6
+from composite_instance cmi
+join cube_instance ci on ci.cmpst_id = cmi.id
+left join ci_indexes cid on cid.cikey = ci.cikey
+where ci.composite_name = 'OntvangenBVVBericht'
+order by ci.creation_date desc;
+]]>
+         </code>
+      </snippet>
+      <snippet name="BPEL Instances voor Process" description="Select BPEL Instances voor een specifiek bpel proces">
+         <code>
+            <![CDATA[select *
+from cube_instance
+where cmpst_id = 1460176
+--and Component_name = 'BerichtBoxAbonnementBPEL'
+and Component_name = 'BerichtBoxUpdateAbonnementenBPEL'
+order by cikey desc;]]>
+         </code>
+      </snippet>
+      <snippet name="Query BPEL Processes" description="Query BPEL Processes">
+         <code>
+            <![CDATA[select * from 
+(select cmi.id
+, cmi.parent_id
+, cmi.composite_dn
+--, cmi.created_time
+--, cmi.updated_time
+, ci.CREATION_DATE
+, ci.MODIFY_DATE
+, extract( hour from (ci.MODIFY_DATE - ci.CREATION_DATE) )* 3600 +extract( minute from (ci.MODIFY_DATE - ci.CREATION_DATE) )* 60+  extract( second from (ci.MODIFY_DATE - ci.CREATION_DATE)) duration_sec
+, cmi.title
+, cmi.STATE composite_instance_state
+, ci.STATE cube_instance_state
+, ci.composite_name
+, cid.index_1
+, cid.index_2
+, cid.index_3
+, cid.index_4
+, cid.index_5
+, cid.index_6
+from composite_instance cmi
+join cube_instance ci on ci.cmpst_id = cmi.id
+left join ci_indexes cid on cid.cikey = ci.cikey
+where --ci.composite_name = 'PrioriterenBVVBericht'
+cmi.parent_id is null
+order by ci.creation_date desc
+) where duration_sec >= 180
+and title like 'ZoekenPersoon%']]>
+         </code>
+      </snippet>
+      <snippet name="Abort SCA Instances" description="">
+         <code>
+            <![CDATA[declare
+  cursor c_tab 
+  is select * from user_tables
+  where table_name = 'SCA_FLOW_INSTANCE';
+  r_tab c_tab%rowtype;
+begin
+  open c_tab;
+  fetch c_tab into r_tab;
+  if c_tab%found then
+    dbms_output.put_line('SCA_FLOW_INSTANCE found. Update it!');
+    execute immediate 'update sca_flow_instance fi
+    set fi.admin_state = 2
+    where fi.flow_id in(select ci.flow_id from cube_instance ci
+    where ci.state = 8)';
+    else 
+      dbms_output.put_line('SCA_FLOW_INSTANCE found. Update it!');
+  end if;
+  close c_tab;
+end;
+/
+]]>
+         </code>
+      </snippet>
+      <snippet name="BPEL Instances by indexes" description="BPEL Instances by indexes">
+         <code>
+            <![CDATA[select ci.cikey, ci.flow_id, ci.creation_date, ci.state, ci.title, ci.status, ci.composite_name, ci.component_name, ci.composite_revision
+from cube_instance ci
+join ci_indexes cid on cid.cikey = ci.cikey
+where cid.index_1 = '16490733' or cid.index_2 = '16490733' or cid.index_3 = '16490733' or cid.index_4 = '16490733' or cid.index_5 = '16490733' or cid.index_6 = '16490733' ;
+]]>
+         </code>
+      </snippet>
+      <snippet name="BPEL Messages" description="">
+         <code>
+            <![CDATA[SELECT 
+  dmr.message_guid,
+  dmr.document_id,
+  dmr.part_name,
+  dmr.document_type,
+  dmr.dlv_partition_date,
+  xdc.document_type,
+  xdc.document,
+   GET_XML_DOCUMENT(xdc.document,to_clob(' ')) doc_PAYLOAD,
+  xdc.document_binary_format,
+dmg.conv_id ,
+dmg.conv_type,
+dmg.properties msg_properties
+--dsn.subscriber_id,
+--dsn.service_name,
+--dsn.event_name,
+--dsn.properties sub_properties
+
+FROM
+  document_dlv_msg_ref dmr
+  join xml_document xdc on xdc.document_id = dmr.document_id
+  join dlv_message dmg on dmg.message_guid = dmr.message_guid
+  --join dlv_subscription dsn on dsn.conv_id = dmg.conv_id and dsn.conv_type = dmg.conv_type
+  where dmg.cikey  in (select cikey from cube_instance where flow_id = 4537505 or flow_id = 4537504);
+--where dmg.conv_id like '%45ba10e89a67c2536943dffa5ae7e560%';
+--order by dmr.dlv_partition_date;]]>
+         </code>
+      </snippet>
+      <snippet name="XMLDocuments" description="Within timeframe and containing messages">
+         <code>
+            <![CDATA[SELECT 
+  dmr.message_guid,
+  dmr.document_id,
+  dmr.part_name,
+  dmr.document_type,
+  dmr.dlv_partition_date,
+  xdc.document_type,
+  xdc.document,
+   GET_XML_DOCUMENT(xdc.document,to_clob(' ')) doc_PAYLOAD,
+  xdc.document_binary_format,
+dmg.conv_id ,
+dmg.conv_type,
+dmg.properties msg_properties
+--dsn.subscriber_id,
+--dsn.service_name,
+--dsn.event_name,
+--dsn.properties sub_properties
+
+FROM
+  document_dlv_msg_ref dmr
+  join xml_document xdc on xdc.document_id = dmr.document_id
+  join dlv_message dmg on dmg.message_guid = dmr.message_guid
+  --join dlv_subscription dsn on dsn.conv_id = dmg.conv_id and dsn.conv_type = dmg.conv_type
+  where dmg.cikey  in (select cikey from cube_instance where flow_id = 4537505 or flow_id = 4537504);
+--where dmg.conv_id like '%45ba10e89a67c2536943dffa5ae7e560%';
+--order by dmr.dlv_partition_date;]]>
+         </code>
+      </snippet>
+   </group>
+   <group category="AQ" language="PLSQL">
+      <snippet name="ITE Inbound" description="Queue Content">
+         <code>
+            <![CDATA[select qtb.queue qname
+, qtb.msg_id
+, qtb.msg_state
+, qtb.enq_timestamp
+, qtb.user_data.header.replyto
+, qtb.user_data.header.type type
+, qtb.user_data.header.userid userid
+, qtb.user_data.header.appid appid
+, qtb.user_data.header.groupid groupid
+, qtb.user_data.header.groupseq groupseq
+, qtb.user_data.header.properties properties
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_compositeInstanceId') tracking_compositeInstanceId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleDeliveryMode') JMS_OracleDeliveryMode
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_ecid') tracking_ecid
+, (select num_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleTimestamp') JMS_OracleTimestamp
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_parentComponentInstanceId') tracking_prtCptInstanceId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_conversationId') tracking_conversationId
+, qtb.user_data.header
+, qtb.user_data.text_lob text
+, qtb.expiration_reason
+--, qtb.*
+from aq$ite_inbound_table qtb
+where qtb.queue = 'ITE_INBOUND'
+order by enq_timestamp desc;]]>
+         </code>
+      </snippet>
+      <snippet name="Dequeue expired messages" description="Dequeue expired messages">
+         <code>
+            <![CDATA[declare
+  l_dequeue_options dbms_aq.DEQUEUE_OPTIONS_T ;
+  l_payload SYS.AQ$_JMS_TEXT_MESSAGE;
+  l_message_properties dbms_aq.message_properties_t ;
+  l_msg_id raw(32);
+  cursor c_aq 
+    is select qtb.queue
+       ,      qtb.msg_id
+       from ( select queue, msg_id from aq$b2b_inbound_table
+              union all
+              select queue, msg_id from aq$b2b_outbound_table
+              union all
+              select queue, msg_id from aq$bvv_inbound_table
+              union all
+              select queue, msg_id from aq$bvv_outbound_table
+              union all
+              select queue, msg_id from aq$ite_inbound_table
+              union all
+              select queue, msg_id from aq$ite_outbound_table
+              union all
+              select queue, msg_id from aq$sbl_outbound_table
+              union all
+              select queue, msg_id from aq$sbl_inbound_table_arch_o              
+              union all
+              select queue, msg_id from aq$sbl_inbound_table_arch_i
+              union all
+              select queue, msg_id from aq$sbl_inbound_table_sync
+            ) qtb
+       where qtb.queue in ( 'AQ$_B2B_INBOUND_TABLE_E','AQ$_B2B_OUTBOUND_TABLE_E'
+                          , 'AQ$_BVV_INBOUND_TABLE_E', 'AQ$_BVV_OUTBOUND_TABLE_E'
+                          , 'AQ$_ITE_INBOUND_TABLE_E', 'AQ$_ITE_OUTBOUND_TABLE_E'
+                          ,'AQ$_SBL_OUTBOUND_TABLE_E','AQ$_SBL_OUTBOUND_TABLE_ARCH_O_E'
+                          ,'AQ$_SBL_OUTBOUND_TABLE_ARCH_I_E','AQ$_SBL_OUTBOUND_TABLE_SYNC_E'             
+                          );
+begin
+  l_dequeue_options.visibility := dbms_aq.immediate;
+  for r_aq in c_aq loop
+    l_dequeue_options.msgid := r_aq.msg_id;    
+    DBMS_AQ.DEQUEUE (
+     queue_name          => r_aq.queue,
+     dequeue_options     => l_dequeue_options,
+     message_properties  => l_message_properties,
+     payload             => l_payload,
+     msgid               => l_msg_id);
+   end loop;
+end;
+/
+]]>
+         </code>
+      </snippet>
+      <snippet name="Query JMS Queues" description="Query JMS Queues">
+         <code>
+            <![CDATA[select  qtb.queue_table 
+, qtb.queue 
+, qtb.msg_id
+, qtb.corr_id correlation_id
+, qtb.msg_state
+, qtb.enq_timestamp
+, qtb.user_data.header.replyto
+, qtb.user_data.header.type type
+, qtb.user_data.header.userid userid
+, qtb.user_data.header.appid appid
+, qtb.user_data.header.groupid groupid
+, qtb.user_data.header.groupseq groupseq
+, qtb.user_data.header.properties properties
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMSCorrelationID') JMSCorrelationID
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMSMessageID') JMSMsgID
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_compositeInstanceId') tracking_compositeInstanceId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleDeliveryMode') JMS_OracleDeliveryMode
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_ecid') tracking_ecid
+, (select num_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleTimestamp') JMS_OracleTimestamp
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_parentComponentInstanceId') tracking_prtCptInstanceId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_conversationId') tracking_conversationId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_SENSOR_NAME') bpel_sensor_name
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_PROCESS_NAME') bpel_process_name
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_PROCESS_REVISION') bpel_process_rev
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_DOMAIN') bpel_domain
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'SBLCorrelationID') SBLCorrelationID
+, qtb.user_data.header
+, qtb.user_data.text_lob text_lob
+, qtb.user_data.text_vc text_vc
+, qtb.expiration_reason
+--, qtb.*
+from (
+  select 'B2B_OUTBOUND_TABLE' queue_table
+  , qtb.* 
+  from AQ$B2B_OUTBOUND_TABLE qtb
+  union all
+  select 'B2B_INBOUND_TABLE' queue_table
+  , qtb.* 
+  from AQ$B2B_INBOUND_TABLE qtb
+  union all
+  select 'BVV_OUTBOUND_TABLE' queue_table
+  , qtb.* 
+  from AQ$BVV_OUTBOUND_TABLE qtb
+  union all
+  select 'BVV_INBOUND_TABLE' queue_table
+  , qtb.* 
+  from AQ$BVV_INBOUND_TABLE qtb
+  union all
+  select 'ITE_OUTBOUND_TABLE' queue_table
+  , qtb.* 
+  from AQ$ITE_OUTBOUND_TABLE qtb
+      union all
+  select 'ITE_UITGAAND_TABLE' queue_table
+  , qtb.* 
+  from AQ$ITE_UITGAAND_TABLE qtb
+  union all
+  select 'ITE_INBOUND_TABLE' queue_table
+  , qtb.* 
+  from AQ$ITE_INBOUND_TABLE qtb
+  union all
+  select 'ITE_INKOMEND_TABLE' queue_table
+  , qtb.* 
+  from AQ$ITE_INKOMEND_TABLE qtb
+  union all
+  select 'SBL_INBOUND_TABLE_ARCH_O' queue_table
+  , qtb.* 
+  from AQ$SBL_INBOUND_TABLE_ARCH_O qtb
+  union all
+  select 'SBL_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE qtb
+  union all
+  select 'SBL_INBOUND_TABLE_ARCH' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_ARCH qtb
+  union all
+  select 'SBL_INBOUND_TABLE_ARCH_I' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_ARCH_I qtb
+  union all
+  select 'SBL_INBOUND_TABLE_ARCH_O' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_ARCH_O qtb
+  union all
+  select 'SBL_INBOUND_TABLE_BUIZA' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_BUIZA qtb
+  union all
+  select 'SBL_INBOUND_TABLE_BVV' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_BVV qtb
+  union all
+  select 'SBL_INBOUND_TABLE_CJIB' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_CJIB qtb
+  union all
+  select 'SBL_INBOUND_TABLE_ELE' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_ELE qtb
+  union all
+  select 'SBL_INBOUND_TABLE_GBA' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_GBA qtb
+  union all
+  select 'SBL_INBOUND_TABLE_JUSTID' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_JUSTID qtb
+  union all
+  select 'SBL_INBOUND_TABLE_LEO' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_LEO qtb
+  union all
+  select 'SBL_INBOUND_TABLE_MORPHO' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_MORPHO qtb
+  union all
+  select 'SBL_INBOUND_TABLE_RVDR' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_RVDR qtb
+  union all
+  select 'SBL_INBOUND_TABLE_RVS' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_RVS qtb
+  union all
+  select 'SBL_INBOUND_TABLE_SYNC' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_SYNC qtb
+  union all
+  select 'SBL_INBOUND_TABLE_UWV' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_UWV qtb
+  union all
+  select 'SBL_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$SBL_OUTBOUND_TABLE qtb
+  union all
+  select 'EVS_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$EVS_INBOUND_TABLE qtb
+  union all
+  select 'EVS_INKOMEND_TABLE' queue_table
+  , qtb.*
+  from AQ$EVS_INKOMEND_TABLE qtb
+  union all
+  select 'EVS_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$EVS_OUTBOUND_TABLE qtb
+  union all
+  select 'EVS_UITGAAND_TABLE' queue_table
+  , qtb.*
+  from AQ$EVS_UITGAAND_TABLE qtb
+  union all
+  select 'BCS_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$BCS_OUTBOUND_TABLE qtb
+  union all
+  select 'CJIB_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$CJIB_INBOUND_TABLE qtb
+  union all
+  select 'CJIB_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$CJIB_OUTBOUND_TABLE qtb
+  union all
+  select 'CVE_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$CVE_INBOUND_TABLE qtb
+  union all
+  select 'CVE_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$CVE_OUTBOUND_TABLE qtb
+  union all
+  select 'DWH_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$DWH_OUTBOUND_TABLE qtb
+  union all
+  select 'EDV_EXCEPTIONS_TABLE' queue_table
+  , qtb.*
+  from AQ$EDV_EXCEPTIONS_TABLE qtb
+  union all
+  select 'EDV_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$EDV_INBOUND_TABLE qtb
+  union all
+  select 'EDV_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$EDV_OUTBOUND_TABLE qtb
+  union all
+  select 'ELE_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$ELE_INBOUND_TABLE qtb
+  union all
+  select 'ELE_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$ELE_OUTBOUND_TABLE qtb
+  union all
+  select 'FNT_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$FNT_INBOUND_TABLE qtb
+  union all
+  select 'FNT_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$FNT_OUTBOUND_TABLE qtb
+  union all
+  select 'GDI_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$GDI_INBOUND_TABLE qtb
+  union all
+  select 'IDS_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$IDS_INBOUND_TABLE qtb
+  union all
+  select 'NHR_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$NHR_INBOUND_TABLE qtb
+  union all
+  select 'NHR_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$NHR_OUTBOUND_TABLE qtb
+  union all
+  select 'OCR_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$OCR_INBOUND_TABLE qtb
+  union all
+  select 'RVDR_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$RVDR_INBOUND_TABLE qtb
+  union all
+  select 'RVDR_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$RVDR_OUTBOUND_TABLE qtb
+  union all
+  select 'SBL_INBOUND_TABLE_EAV' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_EAV qtb
+  union all
+  select 'SIG_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$SIG_INBOUND_TABLE qtb
+  union all
+  select 'SIG_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$SIG_OUTBOUND_TABLE qtb
+  union all
+  select 'SBL_INBOUND_TABLE_ABO' queue_table
+  , qtb.*
+  from AQ$SBL_INBOUND_TABLE_ABO qtb
+) qtb
+--where qtb.queue = 'ITE_INBOUND'
+order by enq_timestamp desc;]]>
+         </code>
+      </snippet>
+      <snippet name="JMS User Queue Tables" description="JMS User Queue Tables">
+         <code>
+            <![CDATA[select * from user_queue_tables
+where object_type = 'SYS.AQ$_JMS_TEXT_MESSAGE';]]>
+         </code>
+      </snippet>
+      <snippet name="User Queues" description="User Queues">
+         <code>
+            <![CDATA[select * from user_queues
+where name in ('SBL_INBOUND_ARCH_IN', 'SBL_INBOUND_ARCH_OUT');]]>
+         </code>
+      </snippet>
+      <snippet name="Start Queue" description="Start JMSUSER Queue">
+         <code>
+            <![CDATA[BEGIN
+  dbms_aqadm.start_queue(queue_name => 'JMSUSER.AQ$_SBL_OUTBOUND_TABLE_E', enqueue => FALSE, dequeue => TRUE);
+END;
+/
+]]>
+         </code>
+      </snippet>
+      <snippet name="Query IP Qtab" description="Query IP Qtab">
+         <code>
+            <![CDATA[select qtb.queue 
+, qtb.msg_id
+, qtb.msg_state
+, qtb.enq_timestamp
+, qtb.CONSUMER_NAME
+, qtb.user_data.MSG_ID
+, qtb.user_data.INREPLYTO_MSG_ID
+, qtb.user_data.FROM_PARTY
+, qtb.user_data.TO_PARTY
+, qtb.user_data.ACTION_NAME
+, qtb.user_data.DOCTYPE_NAME
+, qtb.user_data.MSG_TYPE
+, qtb.user_data.DOCTYPE_REVISION
+, qtb.user_data.PAYLOAD
+, qtb.user_data.ATTACHMENT
+from aq$ip_qtab  qtb
+where qtb.msg_state <> 'PROCESSED'
+order by enq_timestamp desc;]]>
+         </code>
+      </snippet>
+      <snippet name="Dequeue all Expired Messages." description="">
+         <code>
+            <![CDATA[declare
+  l_dequeue_options dbms_aq.DEQUEUE_OPTIONS_T ;
+  l_payload SYS.AQ$_JMS_TEXT_MESSAGE;
+  l_message_properties dbms_aq.message_properties_t ;
+  l_msg_id raw(32);
+  cursor c_uqt 
+  is select * from (
+        select uqt.queue_table, count(*) no_messages 
+        from user_queue_tables uqt
+        where uqt.object_type = 'SYS.AQ$_JMS_TEXT_MESSAGE'
+        group by uqt.queue_table
+     ) where no_messages >0;
+     
+     type t_no_msg_per_q is record (
+     queue_name varchar2(30), 
+     no_messages pls_integer);
+     type t_no_msg_per_qs is table of t_no_msg_per_q
+     index by pls_integer;     
+     l_no_msg_per_qs t_no_msg_per_qs;
+     l_no_msg_per_q_qry varchar2(32767);
+     c_no_msg_per_q SYS_REFCURSOR;
+     
+     type t_q_msg is record (
+     queue_name varchar2(30), 
+     msg_id  raw(32));
+     type t_q_msgs is table of t_q_msg
+     index by pls_integer;     
+     l_q_msgs t_q_msgs;
+     l_q_msg_qry varchar2(32767);
+     c_q_msg_qry SYS_REFCURSOR;
+     
+begin
+  l_dequeue_options.visibility := dbms_aq.immediate;
+  for r_uqt in c_uqt loop
+    if r_uqt.no_messages > 0 then
+      l_no_msg_per_q_qry := ' select qtb.queue queue_name, count(*) no_messages'
+                    || ' from AQ$'|| r_uqt.queue_table || ' qtb '
+                    || ' where qtb.msg_state = ''EXPIRED'''
+                    || ' group by qtb.queue';
+      open c_no_msg_per_q for l_no_msg_per_q_qry;
+      fetch c_no_msg_per_q bulk collect into l_no_msg_per_qs;
+      close c_no_msg_per_q;
+      for l_idx in 1..l_no_msg_per_qs.count
+      loop
+        dbms_output.put_line(r_uqt.queue_table ||'.'|| l_no_msg_per_qs(l_idx).queue_name || ' - ' || l_no_msg_per_qs(l_idx).no_messages);
+        l_q_msg_qry := 'select q.queue queue_name, q.msg_id from AQ$'||r_uqt.queue_table|| ' q where q.queue = '''||l_no_msg_per_qs(l_idx).queue_name||'''';
+        dbms_output.put_line(l_q_msg_qry);
+        open c_q_msg_qry for l_q_msg_qry;
+        fetch c_q_msg_qry bulk collect into l_q_msgs;
+        close c_q_msg_qry;
+        for l_idx in 1..l_q_msgs.count
+        loop
+          l_dequeue_options.msgid := l_q_msgs(l_idx).msg_id;    
+          DBMS_AQ.DEQUEUE (
+            queue_name          => l_q_msgs(l_idx).queue_name,
+            dequeue_options     => l_dequeue_options,
+            message_properties  => l_message_properties,
+            payload             => l_payload,
+            msgid               => l_msg_id);        
+        end loop;
+      end loop;
+    end if;
+  end loop;
+end;
+/]]>
+         </code>
+      </snippet>
+      <snippet name="Query FNT JMS Queues" description="Query FNT JMS Queues">
+         <code>
+            <![CDATA[select  qtb.queue_table 
+, qtb.queue 
+, qtb.msg_id
+, qtb.msg_state
+, qtb.enq_timestamp
+, qtb.user_data.header.replyto
+, qtb.user_data.header.type type
+, qtb.user_data.header.userid userid
+, qtb.user_data.header.appid appid
+, qtb.user_data.header.groupid groupid
+, qtb.user_data.header.groupseq groupseq
+, qtb.user_data.header.properties properties
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_compositeInstanceId') tracking_compositeInstanceId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleDeliveryMode') JMS_OracleDeliveryMode
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_ecid') tracking_ecid
+, (select num_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleTimestamp') JMS_OracleTimestamp
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_parentComponentInstanceId') tracking_prtCptInstanceId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_conversationId') tracking_conversationId
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_SENSOR_NAME') bpel_sensor_name
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_PROCESS_NAME') bpel_process_name
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_PROCESS_REVISION') bpel_process_rev
+, (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_DOMAIN') bpel_domain
+, qtb.user_data.header
+, qtb.user_data.text_lob text
+, qtb.expiration_reason
+from (
+  select 'FNT_INBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$FNT_INBOUND_TABLE qtb
+  union all
+  select 'FNT_OUTBOUND_TABLE' queue_table
+  , qtb.*
+  from AQ$FNT_OUTBOUND_TABLE qtb
+) qtb
+order by enq_timestamp desc;]]>
+         </code>
+      </snippet>
+      <snippet name="Count sbl  messages per queue" description="Count messages per queue ">
+         <code>
+            <![CDATA[select 'AQ$SBL_OUTBOUND_TABLE' QUEUE_TABLE, queue, count(*) no_msgs from aq$sbl_outbound_table
+group by queue
+union all
+select 'AQ$SBL_INBOUND_TABLE' QUEUE_TABLE, queue, count(*) no_msgs from aq$sbl_inbound_table
+group by queue;]]>
+         </code>
+      </snippet>
+      <snippet name="Count messages in JMS Queues" description="">
+         <code>
+            <![CDATA[SELECT
+  qtb.queue_table,
+  qtb.queue,
+  count_msgs
+FROM
+  (
+    SELECT
+      'B2B_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$b2b_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'B2B_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$b2b_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'BVV_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$bvv_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'BVV_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$bvv_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'ITE_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ite_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'ITE_UITGAAND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ite_uitgaand_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'ITE_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ite_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'ITE_INKOMEND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ite_inkomend_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_ARCH_O' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_arch_o qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_ARCH' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_arch qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_ARCH_I' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_arch_i qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_ARCH_O' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_arch_o qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_BUIZA' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_buiza qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_BVV' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_bvv qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_CJIB' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_cjib qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_ELE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_ele qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_GBA' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_gba qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_JUSTID' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_justid qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_LEO' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_leo qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_MORPHO' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_morpho qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_RVDR' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_rvdr qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_RVS' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_rvs qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_SYNC' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_sync qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_UWV' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_uwv qtb
+    GROUP BY
+      qtb.queue
+/*    UNION ALL
+    SELECT
+      'SBL_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      count(*) count_msgs
+    FROM
+      aq$sbl_outbound_table qtb
+    GROUP BY
+      qtb.queue*/
+    UNION ALL
+    SELECT
+      'EVS_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$evs_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'EVS_INKOMEND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$evs_inkomend_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'EVS_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$evs_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'EVS_UITGAAND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$evs_uitgaand_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'BCS_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$bcs_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'CJIB_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$cjib_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'CJIB_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$cjib_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'CVE_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$cve_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'CVE_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$cve_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'DWH_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$dwh_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'EDV_EXCEPTIONS_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$edv_exceptions_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'EDV_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$edv_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'EDV_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$edv_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'ELE_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ele_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'ELE_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ele_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'FNT_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$fnt_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'FNT_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$fnt_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'GDI_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$gdi_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'IDS_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ids_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'NHR_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$nhr_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'NHR_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$nhr_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'OCR_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$ocr_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'RVDR_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$rvdr_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'RVDR_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$rvdr_outbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SBL_INBOUND_TABLE_EAV' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sbl_inbound_table_eav qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SIG_INBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sig_inbound_table qtb
+    GROUP BY
+      qtb.queue
+    UNION ALL
+    SELECT
+      'SIG_OUTBOUND_TABLE' queue_table,
+      qtb.queue,
+      COUNT(*) count_msgs
+    FROM
+      aq$sig_outbound_table qtb
+    GROUP BY
+      qtb.queue
+  ) qtb]]>
+         </code>
+      </snippet>
+      <snippet name="Dequeue Messages from queue table" description="Dequeue All messages from queue table">
+         <code>
+            <![CDATA[declare
+  l_dequeue_options dbms_aq.DEQUEUE_OPTIONS_T ;
+  l_payload SYS.AQ$_JMS_TEXT_MESSAGE;
+  l_message_properties dbms_aq.message_properties_t ;
+  l_msg_id raw(32);
+  l_queue_table varchar2(30) := 'ITE_INBOUND_TABLE';
+  type t_no_msg_per_q is record (
+  queue_name varchar2(30), 
+  no_messages pls_integer);
+  type t_no_msg_per_qs is table of t_no_msg_per_q
+  index by pls_integer;     
+  l_no_msg_per_qs t_no_msg_per_qs;
+  l_no_msg_per_q_qry varchar2(32767);
+  c_no_msg_per_q SYS_REFCURSOR;
+  
+  type t_q_msg is record (
+  queue_name varchar2(30), 
+  msg_id  raw(32));
+  type t_q_msgs is table of t_q_msg
+  index by pls_integer;     
+  l_q_msgs t_q_msgs;
+  l_q_msg_qry varchar2(32767);
+  c_q_msg_qry SYS_REFCURSOR;
+begin
+  l_dequeue_options.visibility := dbms_aq.immediate;
+  l_no_msg_per_q_qry := ' select qtb.queue queue_name, count(*) no_messages'
+                || ' from AQ$'|| l_queue_table || ' qtb '
+               -- || ' where qtb.msg_state = ''EXPIRED'''
+                || ' group by qtb.queue';
+  open c_no_msg_per_q for l_no_msg_per_q_qry;
+  fetch c_no_msg_per_q bulk collect into l_no_msg_per_qs;
+  close c_no_msg_per_q;
+  for l_idx in 1..l_no_msg_per_qs.count
+  loop
+    dbms_output.put_line(l_queue_table ||'.'|| l_no_msg_per_qs(l_idx).queue_name || ' - ' || l_no_msg_per_qs(l_idx).no_messages);
+    l_q_msg_qry := 'select q.queue queue_name, q.msg_id from AQ$'||l_queue_table|| ' q where q.queue = '''||l_no_msg_per_qs(l_idx).queue_name||'''';
+    dbms_output.put_line(l_q_msg_qry);
+    open c_q_msg_qry for l_q_msg_qry;
+    fetch c_q_msg_qry bulk collect into l_q_msgs;
+    close c_q_msg_qry;
+    for l_idx in 1..l_q_msgs.count
+    loop
+      l_dequeue_options.msgid := l_q_msgs(l_idx).msg_id;    
+      DBMS_AQ.DEQUEUE (
+        queue_name          => l_q_msgs(l_idx).queue_name,
+        dequeue_options     => l_dequeue_options,
+        message_properties  => l_message_properties,
+        payload             => l_payload,
+        msgid               => l_msg_id);        
+    end loop;
+  end loop;
+end;
+/]]>
+         </code>
+      </snippet>
+      <snippet name="RequeueExpiredJMSMessages" description="Requeue Expired JMS Messages">
+         <code>
+            <![CDATA[declare
+  l_except_queue varchar2(30) := 'AQ$_ITE_OUTBOUND_TABLE_E';
+  l_dest_queue varchar2(30) := 'ITE_OUTBOUND';
+  l_message_type varchar2(30) := 'registrerenvreemdelingbericht';
+  cursor c_qtb 
+    is select  qtb.queue_table 
+      , qtb.queue 
+      , qtb.msg_id
+      , qtb.corr_id correlation_id
+      , qtb.msg_state
+      , qtb.enq_timestamp
+      , qtb.user_data
+      , qtb.user_data.header.replyto
+      , qtb.user_data.header.type type
+      , qtb.user_data.header.userid userid
+      , qtb.user_data.header.appid appid
+      , qtb.user_data.header.groupid groupid
+      , qtb.user_data.header.groupseq groupseq
+      , qtb.user_data.header.properties properties
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMSCorrelationID') JMSCorrelationID
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMSMessageID') JMSMsgID
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_compositeInstanceId') tracking_compositeInstanceId
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleDeliveryMode') JMS_OracleDeliveryMode
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_ecid') tracking_ecid
+      , (select num_value from table (qtb.user_data.header.properties) prp where prp.name = 'JMS_OracleTimestamp') JMS_OracleTimestamp
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_parentComponentInstanceId') tracking_prtCptInstanceId
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'tracking_conversationId') tracking_conversationId
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_SENSOR_NAME') bpel_sensor_name
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_PROCESS_NAME') bpel_process_name
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_PROCESS_REVISION') bpel_process_rev
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'BPEL_DOMAIN') bpel_domain
+      , (select str_value from table (qtb.user_data.header.properties) prp where prp.name = 'SBLCorrelationID') SBLCorrelationID
+      , qtb.user_data.header
+      , qtb.user_data.text_lob text_lob
+      , qtb.user_data.text_vc text_vc
+      , qtb.expiration_reason
+      --, qtb.*
+      from (
+        select 'ITE_OUTBOUND_TABLE' queue_table
+        , qtb.* 
+        from AQ$ITE_OUTBOUND_TABLE qtb
+      ) qtb
+      where qtb.user_data.text_vc  like '<'||l_message_type||'%'
+      and qtb.msg_state = 'EXPIRED'
+      and qtb.expiration_reason = 'MAX_RETRY_EXCEEDED'
+      order by queue_table, enq_timestamp asc;
+  l_payload SYS.AQ$_JMS_TEXT_MESSAGE;
+  l_sbl_correlation_id varchar2(100);
+  l_parentComponentInstanceId varchar2(100);
+  l_jms_type varchar2(100);
+  --
+  function get_jms_property(p_payload in SYS.AQ$_JMS_TEXT_MESSAGE, p_property_name in varchar2)
+  return varchar2
+  as
+    l_property varchar2(32767);
+  begin
+    select str_value into l_property from table (l_payload.header.properties) prp where prp.name = p_property_name;
+    return l_property;
+  exception
+    when no_data_found then
+      return null;
+  end get_jms_property;
+  --
+  procedure dequeue_msg(p_queue in varchar2, p_msg_id in raw)
+  is
+    l_dequeue_options dbms_aq.DEQUEUE_OPTIONS_T ;
+    l_payload SYS.AQ$_JMS_TEXT_MESSAGE;
+    l_message_properties dbms_aq.message_properties_t ;
+    l_msg_id raw(32);
+  begin
+    --l_dequeue_options.visibility := dbms_aq.immediate;
+    l_dequeue_options.visibility := dbms_aq.on_commit;
+    l_dequeue_options.msgid := p_msg_id;    
+    DBMS_AQ.DEQUEUE (
+     queue_name          => p_queue,
+     dequeue_options     => l_dequeue_options,
+     message_properties  => l_message_properties,
+     payload             => l_payload,
+     msgid               => l_msg_id);
+  end dequeue_msg;
+  --
+  procedure enqueue_msg(p_queue in varchar2, p_payload SYS.AQ$_JMS_TEXT_MESSAGE)
+  is
+    l_enqueue_options dbms_aq.ENQUEUE_OPTIONS_T ;
+    l_message_properties dbms_aq.message_properties_t ;
+    l_msg_id raw(32);
+  begin
+    --l_enqueue_options.visibility := dbms_aq.immediate;
+    l_enqueue_options.visibility := dbms_aq.on_commit;
+    DBMS_AQ.ENQUEUE (
+     queue_name          => p_queue,
+     enqueue_options     => l_enqueue_options,
+     message_properties  => l_message_properties,
+     payload             => p_payload,
+     msgid               => l_msg_id);
+  end enqueue_msg;
+  --
+begin
+  for r_qtb in c_qtb loop
+    l_payload := r_qtb.user_data;
+    l_jms_type := r_qtb.user_data.header.type;
+    l_sbl_correlation_id := get_jms_property(l_payload, 'SBLCorrelationID');
+    l_parentComponentInstanceId := get_jms_property(l_payload, 'tracking_parentComponentInstanceId');
+    dbms_output.put_line(r_qtb.queue||' - '||' - '||l_jms_type||' - '||r_qtb.msg_id||' - '||l_sbl_correlation_id||' - '||l_parentComponentInstanceId);
+    enqueue_msg(l_dest_queue , l_payload);
+    dequeue_msg(l_except_queue , r_qtb.msg_id);
+  end loop;
+end;]]>
+         </code>
+      </snippet>
+   </group>
+   <group category="Handy Tools" language="PLSQL">
+      <snippet name="FormattedGuid" description="Generated a Formatted Guid">
+         <code>
+            <![CDATA[select get_guid_fmt.guid
+, get_guid_fmt.guid_formatted
+, lower(get_guid_fmt.guid_formatted) guid_formatted_lwr
+, get_guid_fmt.guid_length
+from (
+with get_guid as (select sys_guid() guid
+from dual)
+select guid
+, substr(guid, 1, 4)||'-'||substr(guid, 5, 4)||'-'||substr(guid, 9, 4)||'-'||substr(guid, 13, 4)||'-'||substr(guid, 17, 4)||'-'||substr(guid, 21, 4)||'-'||substr(guid, 25, 4) ||'-'||substr(guid, 29, 4) guid_formatted
+, length(guid) guid_length
+from get_guid
+) get_guid_fmt;]]>
+         </code>
+      </snippet>
+      <snippet name="Count Rows in User Tables" description="">
+         <code>
+            <![CDATA[declare
+  l_count pls_integer;
+begin
+  for r_tab in (select table_name from user_tables) loop
+     execute immediate 'select count(*) from '||r_tab.table_name
+     into l_count;
+     if l_count>0 then
+       dbms_output.put_line(r_tab.table_name||' - number of rows: '||l_count);
+     end if;
+  end loop;
+end;
+/]]>
+         </code>
+      </snippet>
+   </group>
+</snippets>

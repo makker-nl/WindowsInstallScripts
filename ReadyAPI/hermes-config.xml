@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<config lastEditedByUser="makker" lastEditedByHermesVersion="v1.14" maxThreadPoolSize="5" auditDirectory="C:\temp" messageFilesDir="C:\.hermes\.\messages" maxMessagesInBrowserPane="1000" copyJMSProviderProperties="true" copyJMSCorrelationID="true" copyJMSType="true" copyJMSExpiration="true" copyJMSReplyTo="true" copyJMSPriority="true" displayFactoryAdmin="true" maxColumnsInStatisticsTable="10" autoBrowseRefreshRate="10" correctDropSemantics="false" selectorImpl="hermes.selector.JAMSELMessageSelectorFactory" queueBrowseConsumerTimeout="0" enableJython="true" lookAndFeel="com.sun.java.swing.plaf.windows.WindowsLookAndFeel" scrollMessagesDuringBrowse="true" base64EncodeMessages="true">
+    <classpathGroup id="DirectAQ">
+        <library jar="c:\Utils\hermesJMS\lib\oracleaq\aqapi.jar" noFactories="true"/>
+        <library jar="c:\Utils\hermesJMS\lib\oracleaq\ojdbc8.jar" noFactories="true"/>
+        <library jar="c:\Utils\hermesJMS\lib\hermes-aq.jar" noFactories="false" factories="hermes.ext.oracle.aq.AQConnectionFactory"/>
+    </classpathGroup>
+    <classpathGroup id="WLS">
+        <library jar="C:\Oracle\JDeveloper\12213_SOAQS\wlserver\server\lib\weblogic.jar" noFactories="false" factories="weblogic.jms.client.JMSXAConnectionFactory,weblogic.jms.client.JMSConnectionFactory"/>
+    </classpathGroup>
+    <renderer className="hermes.renderers.DefaultMessageRenderer">
+        <properties>
+            <property name="bytesIsString" value="false"/>
+            <property name="bytesIsObject" value="false"/>
+            <property name="active" value="true"/>
+            <property name="toStringOnObjectMessage" value="false"/>
+            <property name="bytesIsObjectBufferSize" value="65536"/>
+            <property name="messageCache" value="100"/>
+        </properties>
+    </renderer>
+    <renderer className="hermes.renderers.DefaultMessageHeaderRenderer">
+        <properties>
+            <property name="active" value="true"/>
+        </properties>
+    </renderer>
+    <renderer className="hermes.renderers.ToStringMessageRenderer">
+        <properties>
+            <property name="active" value="true"/>
+        </properties>
+    </renderer>
+    <renderer className="hermes.renderers.HexMessageRenderer">
+        <properties>
+            <property name="active" value="true"/>
+        </properties>
+    </renderer>
+    <renderer className="hermes.renderers.XMLMessageRenderer">
+        <properties>
+            <property name="active" value="true"/>
+        </properties>
+    </renderer>
+    <renderer className="hermes.renderers.fix.FIXMessageRenderer">
+        <properties>
+            <property name="displayHeaderAndTrailer" value="true"/>
+            <property name="displayValueWithEnum" value="true"/>
+            <property name="active" value="true"/>
+            <property name="messageCache" value="100"/>
+        </properties>
+    </renderer>
+    <renderer className="hermes.renderers.EBCDICMessageRenderer">
+        <properties>
+            <property name="undisplayableChar" value="."/>
+            <property name="rowLength" value="16"/>
+            <property name="active" value="true"/>
+            <property name="maxMessageSize" value="5242880"/>
+        </properties>
+    </renderer>
+    <factory classpathId="System">
+        <provider className="hermes.providers.file.FileConnectionFactory">
+            <properties>
+                <property name="baseDirectory" value="${hermes.home}/bin/messages"/>
+            </properties>
+        </provider>
+        <connection clientID="" connectionPerThread="false">
+            <session id="Files" reconnects="0" audit="false" useConsumerForQueueBrowse="false"/>
+        </connection>
+        <destination name="examples.xml" domain="1"/>
+        <destination name="fix.xml" domain="1" durable="false" useLocalRenderer="true"/>
+        <extension className="hermes.ext.DefaultHermesAdminFactory">
+            <properties/>
+        </extension>
+    </factory>
+    <factory classpathId="DirectAQ">
+        <provider className="hermes.ext.oracle.aq.AQConnectionFactory">
+            <properties>
+                <property name="url" value="jdbc:oracle:thin:jmsuser/jmsuser@devdbhost.conclusion.local:1521/ORCL"/>
+            </properties>
+        </provider>
+        <connection clientID="" connectionPerThread="false">
+            <session id="AQ_DEV" reconnects="0" transacted="true" audit="false" useConsumerForQueueBrowse="false"/>
+        </connection>
+        <destination name="SBL_INBOUND" domain="1" durable="false"/>
+        <destination name="SBL_OUTBOUND" domain="1" durable="false"/>
+        <extension className="hermes.ext.DefaultHermesAdminFactory">
+            <properties/>
+        </extension>
+    </factory>
+    <factory classpathId="DirectAQ">
+        <provider className="hermes.ext.oracle.aq.AQConnectionFactory">
+            <properties>
+                <property name="url" value="jdbc:oracle:thin:jmsuser/jmsuser@devdbhost12c.conclusion.local:1521/ORCL"/>
+            </properties>
+        </provider>
+        <connection clientID="" connectionPerThread="false">
+            <session id="AQ_DEV-12c" reconnects="0" transacted="true" audit="false" useConsumerForQueueBrowse="false"/>
+        </connection>
+        <destination name="SBL_INBOUND" domain="1" durable="false"/>
+        <destination name="SBL_OUTBOUND" domain="1" durable="false"/>
+        <extension className="hermes.ext.DefaultHermesAdminFactory">
+            <properties/>
+        </extension>
+    </factory>
+    <quickFIX cacheSize="1024"/>
+</config>
